@@ -18,35 +18,37 @@ int LED1 = 13; // Use the onboard Uno LED
 int LED2 = 12;
 int isObstaclePin2 = 7; // This is our input pin
 int isObstaclePin1 = 6; // This is our input pin 1
+int thresh;
 int isObstacle2 = HIGH;  // HIGH MEANS NO OBSTACLE
 int isObstacle1 = HIGH;
 bool step = false;
-
 bool off;
+
 void setup() {
   pinMode(LED1, OUTPUT);
   pinMode(LED2, OUTPUT);
   pinMode(isObstaclePin2, INPUT);
   pinMode(isObstaclePin1, INPUT);
   Serial.begin(9600);
-  
+
 }
 
+/*
 void loop() {
   isObstacle2 = HIGH;
   isObstacle1 = HIGH;
   step = false;
   isObstacle2 = digitalRead(isObstaclePin2);
   isObstacle1 = digitalRead(isObstaclePin1);
-  
+
   if ((isObstacle2 == LOW))
   {
     Serial.println("OBSTACLE!! 2, OBSTACLE!! 2");
     while(isObstacle2 == LOW){
-      
+
       isObstacle1 = digitalRead(isObstaclePin1);
       isObstacle2 = digitalRead(isObstaclePin2);
-      
+
       if(isObstacle1 == LOW){
         while(true){
           isObstacle2 = digitalRead(isObstaclePin2);
@@ -62,7 +64,7 @@ void loop() {
         }
       }
     }
-    
+
     if(step){
       Serial.println("added");
       amount++;
@@ -93,7 +95,7 @@ void loop() {
         }
       }
     }
-    
+
     if(step){
         if(amount > 0){
           Serial.println("delete");
@@ -112,4 +114,21 @@ void loop() {
   }
   delay(200);
 
+}
+*/
+
+void loop(){
+  isObstacle1 = analogRead(isObstaclePin1);
+  isObstacle2 = analogRead(isObstaclePin2);
+  thresh = 300;
+
+  if(isObstacle1<thresh && isObstacle2>thresh){
+    amount++;                                      //  INCREMENT
+    delay(900);
+  }
+
+  if(isObstacle1>thresh && isObstacle2<thresh){
+    amount--;                                       // DECREMENT
+    delay(900);
+  }
 }
