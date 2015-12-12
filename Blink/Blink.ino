@@ -12,194 +12,185 @@
   modified 8 May 2014
   by Scott Fitzgerald
  */
+#include "etherShield.h"
+#include "ETHER_28J60.h"
 
 int amount = 0;
+
+// light Pin
 int LED1 = 13; // Use the onboard Uno LED
 int LED2 = 12;
+
+// sensors Pin and boolean
 int isObstaclePin2 = 1; // This is our input pin
 int isObstaclePin1 = 0; // This is our input pin 1
-int buzzerPin;
 int isObstacle2 = HIGH;  // HIGH MEANS NO OBSTACLE
 int isObstacle1 = HIGH;
-int button1 = 7;
-int button1State = HIGH;
-bool step = false;
-bool off;
-bool alert;
-bool full;
-bool dim;
+
+// sound Pin
+int buzzerPin;
+
+// Boolean state
+bool fullLight = true;
+bool dimLight = false;
+bool alert = false;
+bool off = false;
 int thresh;
 
-void alertPress(){
-  digitalWrite(buzzerPin, LOW);
+static uint8_t mac[6] = {0xAA, 0xBB, 0xCC, 0xDD, 0xBB, 0xAA};
+static uint8_t ip[4] = {192, 168, 0, 15}; // need to check from router
+static uint16_t port = 80;
+ETHER_28J60 e;
+
+void alertOn(){
   alert = true;
 }
-void fullLightPress(){
-   digitalWrite(LED1, LOW);
-   digitalWrite(LED2, LOW);
-   full = true;
-   dim = false;
+
+void alertOff(){
+  alert = false;
+}
+
+void fullLightOn(){
+
+}
+
+void fullLightOff(){
+  fullLight = false;
 }
 
 void dimLightPress(){
-   digitalWrite(LED1, HIGH);
-   digitalWrite(LED2, LOW);
-   full = false;
-   dim = true;
+   fullLight = false;
+   dimLight = true;
   }
 
 void offPress(){
-  digitalWrite(buzzerPin, HIGH);
-  digitalWrite(LED1, HIGH);
-  digitalWrite(LED2, HIGH);
-  full = false;
-  dim = false;
+  fullLight = false;
+  dimLight = false;
   alert =false;
   }
-//void setup() {
-//  pinMode(LED1, OUTPUT);
-//  pinMode(LED2, OUTPUT);
-//  pinMode(isObstaclePin2, INPUT);
-//  pinMode(isObstaclePin1, INPUT);
-//  Serial.begin(9600);
-//  
-//}
-//
-//void loop() {
-//  isObstacle2 = HIGH;
-//  isObstacle1 = HIGH;
-//  step = false;
-//  isObstacle2 = digitalRead(isObstaclePin2);
-//  isObstacle1 = digitalRead(isObstaclePin1);
-//  
-//  if ((isObstacle2 == LOW))
-//  {
-//    Serial.println("OBSTACLE!! 2, OBSTACLE!! 2");
-//    while(isObstacle2 == LOW){
-//      
-//      isObstacle1 = digitalRead(isObstaclePin1);
-//      isObstacle2 = digitalRead(isObstaclePin2);
-//      
-//      if(isObstacle1 == LOW){
-//        while(true){
-//          isObstacle2 = digitalRead(isObstaclePin2);
-//          if(isObstacle2 == HIGH){
-//            step = true;
-//            break;
-//          }
-//          isObstacle1 = digitalRead(isObstaclePin1);
-//          if(isObstacle1 == HIGH){
-//            step = false;
-//            break;
-//          }
-//        }
-//      }
-//    }
-//    
-//    if(step){
-//      Serial.println("added");
-//      amount++;
-//    }
-//    Serial.println(amount);
-//  } else if ((isObstacle1 == LOW))
-//  {
-//    Serial.println("OBSTACLE!! 1, OBSTACLE!! 1");
-//    while(isObstacle1 == LOW) {
-//
-//      isObstacle1 = digitalRead(isObstaclePin1);
-//      isObstacle2 = digitalRead(isObstaclePin2);
-//
-//      if(isObstacle2 == LOW){
-//        while(true){
-//
-//          isObstacle1 = digitalRead(isObstaclePin1);
-//          if(isObstacle1 == HIGH){
-//            step = true;
-//            break;
-//          }
-//
-//          isObstacle2 = digitalRead(isObstaclePin2);
-//          if(isObstacle2 == HIGH){
-//            step = false;
-//            break;
-//          }
-//        }
-//      }
-//    }
-//    
-//    if(step){
-//        if(amount > 0){
-//          Serial.println("delete");
-//          amount--;
-//        }
-//      }
-//      Serial.println(amount);
-//    }
-//
-//  if(amount == 0){
-//    digitalWrite(LED1, HIGH);
-//    digitalWrite(LED2, HIGH);
-//  } else {
-//    digitalWrite(LED1, LOW);
-//    digitalWrite(LED2, LOW);
-//  }
-//  delay(200);
-//
-//}
 
 void setup()
 {
-  
+  e.setup(mac, ip, port);
   pinMode(LED1, OUTPUT);
   pinMode(LED2, OUTPUT);
   Serial.begin(9600);
   pinMode(button1,INPUT);
- 
+
 }
 
 void loop(){
- button1State = digitalRead(button1);
- Serial.println(button1State);
- if (button1State == LOW) {
-  full = true;
-  
+  char* params;
+  // Read from Android
+  if (params = e.serviceRequest())
+  {
+    // Full light case
+    if (strcmp(params, "?cmd=fullLightOn") == 0)
+    {
+      fullLight = true;
+      dimLight = false;
+    }
+
+    if (strcmp(params, "?cmd=fullLightOff") == 0)
+    {
+      fullLight = false;
+    }
+
+    // Dim light case
+    if (strcmp(params, "?cmd=dimLightOn") == 0)
+    {
+      fullLight = false;
+      dimLight = true;
+    }
+
+    if (strcmp(params, "?cmd=dimLightOff") == 0)
+    {
+      dimLight = false;
+    }
+
+    // Alert case
+    if (strcmp(params, "?cmd=alertOn") == 0)
+    {
+      alert = true;
+    }
+    if (strcmp(params, "?cmd=alertOff") == 0)
+    {
+      alert = false;
+    }
+
+    // System on/off case
+    if (strcmp(params, "?cmd=turnOff") == 0)
+    {
+      fullLight = false;
+      dimLight = false;
+      alert =false;
+    }
+    e.respond();
   }
- 
-  if(!off){  
-    isObstacle1 = analogRead(isObstaclePin1);                        // READ SENSOR A AND B
+
+
+  // Execute
+  if(!off){
+    isObstacle1 = analogRead(isObstaclePin1);
     isObstacle2= analogRead(isObstaclePin2);
-    thresh = 500;                                  // !!!!!!!!!!!!!!!   CHANGE THE VALUE OF THRESHOLD ACCORDING TO THE AMBIENT LIGHT
+    thresh = 500;
+
     if(isObstacle1<thresh && isObstacle2>thresh)
     {
-      amount++;                                      //  INCREMENT
+      amount++;
       Serial.println("added");
       Serial.println(amount);
       delay(900);
     }
-    
+
     if(isObstacle1>thresh && isObstacle2<thresh)
     {
       if(amount != 0){
-      amount--;                                       // DECREMENT
+      amount--;
       }
       Serial.println("deleted");
       Serial.println(amount);
       delay(900);
     }
-  
-    
+
+    if(alert){
+
+      if(isObstacle1<thresh || isObstacle2<thresh)
+      {
+        digitalWrite(buzzerPin, LOW);
+      }
+
+    } else{
+      digitalWrite(buzzerPin, HIGH);
+    }
+
     if(amount == 0){
       digitalWrite(LED1, HIGH);
       digitalWrite(LED2, HIGH);
     } else {
-      if(full){
-        fullLightPress();
-      } else {
-        dimLightPress();
-      }
-    }
-  } else {
-    offPress();
-  }
-}
 
+      if(fullLight){
+        digitalWrite(LED1, LOW);
+        digitalWrite(LED2, LOW);
+      } else if(dimLight) {
+        digitalWrite(LED1, LOW);
+        digitalWrite(LED2, HIGH);
+      } else {
+        digitalWrite(LED1, HIGH);
+        digitalWrite(LED2, HIGH);
+      }
+
+    }
+
+// end if(off)
+  }else {
+    digitalWrite(buzzerPin, HIGH);
+    digitalWrite(LED1, HIGH);
+    digitalWrite(LED2, HIGH);
+    fullLight = false;
+    dimLight = false;
+    alert =false;
+  }
+
+
+}
