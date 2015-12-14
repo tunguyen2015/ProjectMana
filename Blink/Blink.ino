@@ -1,3 +1,7 @@
+#include <SPI.h>
+#include <Ethernet.h>
+#include <Servo.h> 
+
 /*
   Blink
   Turns on an LED on for one second, then off for one second, repeatedly.
@@ -12,8 +16,6 @@
   modified 8 May 2014
   by Scott Fitzgerald
  */
-#include "etherShield.h"
-#include "ETHER_28J60.h"
 
 int amount = 0;
 
@@ -37,10 +39,13 @@ bool alert = false;
 bool off = false;
 int thresh;
 
-static uint8_t mac[6] = {0xAA, 0xBB, 0xCC, 0xDD, 0xBB, 0xAA};
-static uint8_t ip[4] = {192, 168, 0, 15}; // need to check from router
-static uint16_t port = 80;
-ETHER_28J60 e;
+Servo microservo; 
+byte mac[] = { 0xDE, 0xAD, 0xBE, 0xEF, 0xFE, 0xED };   //physical mac address
+byte ip[] = { 192, 168, 1, 178 };                      // ip in lan (that's what you need to use in your browser. ("192.168.1.178")
+byte gateway[] = { 192, 168, 1, 1 };                   // internet access via router
+byte subnet[] = { 255, 255, 255, 0 };                  //subnet mask
+EthernetServer server(80);       
+String params;
 
 void alertOn(){
   alert = true;
@@ -71,63 +76,76 @@ void offPress(){
 
 void setup()
 {
-  e.setup(mac, ip, port);
+  Ethernet.begin(mac, ip, gateway, subnet);
+  server.begin();
+  Serial.print("server is at ");
+  Serial.println(Ethernet.localIP());
+  
   pinMode(LED1, OUTPUT);
   pinMode(LED2, OUTPUT);
   Serial.begin(9600);
-  pinMode(button1,INPUT);
 
 }
 
 void loop(){
-  char* params;
   // Read from Android
-  if (params = e.serviceRequest())
-  {
-    // Full light case
-    if (strcmp(params, "?cmd=fullLightOn") == 0)
-    {
-      fullLight = true;
-      dimLight = false;
-    }
+  EthernetClient client = server.available();
+  if (client) {
+    char c = client.read();
+      
+          
+          if (params.length() < 100) {
+          //store characters to string
+          params += c;
+          //Serial.print(c);
+         }
+          
 
-    if (strcmp(params, "?cmd=fullLightOff") == 0)
-    {
-      fullLight = false;
+      client.stop();
+      
+      if (params.indexOf( "?cmd=fullLightOn") > 0)
+      {
+        fullLight = true;
+        dimLight = false;
+      }
+  
+      if (params.indexOf( "?cmd=fullLightOff") > 0)
+      {
+        fullLight = false;
+      }
+  
+      // Dim light case
+      if (params.indexOf( "?cmd=dimLightOn") > 0)
+      {
+        fullLight = false;
+        dimLight = true;
+      }
+  
+      if (params.indexOf( "?cmd=dimLightOff") > 0)
+      {
+        dimLight = false;
+      }
+  
+      // Alert case
+      if (params.indexOf( "?cmd=alertOn") > 0)
+      {
+        alert = true;
+      }
+      if (params.indexOf( "?cmd=alertOff") > 0)
+      {
+        alert = false;
+      }
+  
+      // System on/off case
+      if (params.indexOf( "?cmd=turnOff") > 0)
+      {
+        fullLight = false;
+        dimLight = false;
+        alert =false;
+      }
+      
     }
-
-    // Dim light case
-    if (strcmp(params, "?cmd=dimLightOn") == 0)
-    {
-      fullLight = false;
-      dimLight = true;
-    }
-
-    if (strcmp(params, "?cmd=dimLightOff") == 0)
-    {
-      dimLight = false;
-    }
-
-    // Alert case
-    if (strcmp(params, "?cmd=alertOn") == 0)
-    {
-      alert = true;
-    }
-    if (strcmp(params, "?cmd=alertOff") == 0)
-    {
-      alert = false;
-    }
-
-    // System on/off case
-    if (strcmp(params, "?cmd=turnOff") == 0)
-    {
-      fullLight = false;
-      dimLight = false;
-      alert =false;
-    }
-    e.respond();
-  }
-
+  
 
   // Execute
   if(!off){
