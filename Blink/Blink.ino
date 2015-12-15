@@ -30,22 +30,22 @@ int isObstacle2 = HIGH;  // HIGH MEANS NO OBSTACLE
 int isObstacle1 = HIGH;
 
 // sound Pin
-int buzzerPin;
+int buzzerPin = 9;
 
 // Boolean state
 bool fullLight = true;
 bool dimLight = false;
-bool alert = false;
+bool alert = true;
 bool off = false;
 int thresh;
 
-Servo microservo; 
-byte mac[] = { 0xDE, 0xAD, 0xBE, 0xEF, 0xFE, 0xED };   //physical mac address
-byte ip[] = { 192, 168, 1, 178 };                      // ip in lan (that's what you need to use in your browser. ("192.168.1.178")
-byte gateway[] = { 192, 168, 1, 1 };                   // internet access via router
-byte subnet[] = { 255, 255, 255, 0 };                  //subnet mask
-EthernetServer server(80);       
-String params;
+Servo myservo; // create servo object to control a servo
+byte mac[] = { 0xDE, 0xAD, 0xBE, 0xEF, 0xFE, 0xED }; //physical mac address
+byte ip[] = { 192, 168, 100, 20 }; // fixed IP addr in LAN
+byte gateway[] = { 192, 168, 100, 1 }; // internet access via router
+byte subnet[] = { 255, 255, 255, 0 }; //subnet mask
+EthernetServer server(80); //server port
+String readString;
 
 void alertOn(){
   alert = true;
@@ -76,76 +76,17 @@ void offPress(){
 
 void setup()
 {
-  Ethernet.begin(mac, ip, gateway, subnet);
-  server.begin();
-  Serial.print("server is at ");
-  Serial.println(Ethernet.localIP());
-  
   pinMode(LED1, OUTPUT);
   pinMode(LED2, OUTPUT);
+  pinMode(buzzerPin, OUTPUT);
+  
+  Ethernet.begin(mac, ip, gateway, subnet);
+  server.begin();
   Serial.begin(9600);
-
 }
 
 void loop(){
-  // Read from Android
-  EthernetClient client = server.available();
-  if (client) {
-    char c = client.read();
-      
-          
-          if (params.length() < 100) {
-          //store characters to string
-          params += c;
-          //Serial.print(c);
-         }
-          
-
-      client.stop();
-      
-      if (params.indexOf( "?cmd=fullLightOn") > 0)
-      {
-        fullLight = true;
-        dimLight = false;
-      }
-  
-      if (params.indexOf( "?cmd=fullLightOff") > 0)
-      {
-        fullLight = false;
-      }
-  
-      // Dim light case
-      if (params.indexOf( "?cmd=dimLightOn") > 0)
-      {
-        fullLight = false;
-        dimLight = true;
-      }
-  
-      if (params.indexOf( "?cmd=dimLightOff") > 0)
-      {
-        dimLight = false;
-      }
-  
-      // Alert case
-      if (params.indexOf( "?cmd=alertOn") > 0)
-      {
-        alert = true;
-      }
-      if (params.indexOf( "?cmd=alertOff") > 0)
-      {
-        alert = false;
-      }
-  
-      // System on/off case
-      if (params.indexOf( "?cmd=turnOff") > 0)
-      {
-        fullLight = false;
-        dimLight = false;
-        alert =false;
-      }
-      
-    }
-  
+  getData(); 
 
   // Execute
   if(!off){
@@ -155,60 +96,138 @@ void loop(){
 
     if(isObstacle1<thresh && isObstacle2>thresh)
     {
-      amount++;
-      Serial.println("added");
-      Serial.println(amount);
-      delay(900);
-    }
-
-    if(isObstacle1>thresh && isObstacle2<thresh)
+      while(isObstacle1 < thresh){
+            getData();
+            updatePin();
+            isObstacle1 = analogRead(isObstaclePin1);
+            isObstacle2= analogRead(isObstaclePin2);
+        if(isObstacle2 < thresh && isObstacle1 > thresh){
+          amount++;
+          Serial.println("added");
+          Serial.println(amount);
+          delay(700);
+          break;
+        }
+      }
+    } else if(isObstacle1>thresh && isObstacle2<thresh)
     {
-      if(amount != 0){
-      amount--;
+      while(isObstacle2 < thresh){
+            getData();
+            updatePin();
+            isObstacle1 = analogRead(isObstaclePin1);
+            isObstacle2= analogRead(isObstaclePin2);
+        if(isObstacle1 < thresh && isObstacle2 > thresh){
+          if(amount != 0){
+          amount--;
+          }
+          Serial.println("deleted");
+          Serial.println(amount);
+          delay(700);
+          break;          
+        }
       }
-      Serial.println("deleted");
-      Serial.println(amount);
-      delay(900);
     }
 
-    if(alert){
-
-      if(isObstacle1<thresh || isObstacle2<thresh)
-      {
-        digitalWrite(buzzerPin, LOW);
-      }
-
-    } else{
-      digitalWrite(buzzerPin, HIGH);
-    }
-
-    if(amount == 0){
-      digitalWrite(LED1, HIGH);
-      digitalWrite(LED2, HIGH);
-    } else {
-
-      if(fullLight){
-        digitalWrite(LED1, LOW);
-        digitalWrite(LED2, LOW);
-      } else if(dimLight) {
-        digitalWrite(LED1, LOW);
-        digitalWrite(LED2, HIGH);
-      } else {
-        digitalWrite(LED1, HIGH);
-        digitalWrite(LED2, HIGH);
-      }
-
-    }
+    updatePin();
 
 // end if(off)
   }else {
-    digitalWrite(buzzerPin, HIGH);
-    digitalWrite(LED1, HIGH);
-    digitalWrite(LED2, HIGH);
+    digitalWrite(buzzerPin, LOW);
+    digitalWrite(LED1, LOW);
+    digitalWrite(LED2, LOW);
     fullLight = false;
     dimLight = false;
     alert =false;
   }
-
-
 }
+
+void getData(){
+  EthernetClient client = server.available();
+  if (client) {
+    if (client.available()) {
+      char c = client.read();
+      
+      if (readString.length() < 100) {
+      readString += c;
+      }
+      
+      if (c == '\n') {
+        client.stop();
+
+      if (readString.indexOf( "?fullLightOn") > 0){
+        fullLight = true;
+        dimLight = false;
+        Serial.println("fullLightOn");
+      }
+  
+      if (readString.indexOf( "?fullLightOff") > 0){
+        fullLight = false;
+        Serial.println("fullLightOff");
+      }
+  
+      // Dim light case
+      if (readString.indexOf( "?dimLightOn") > 0){
+        fullLight = false;
+        dimLight = true;
+        Serial.println("dimLightOn");
+      }
+  
+      if (readString.indexOf( "?dimLightOff") > 0){
+        dimLight = false;
+        Serial.println("dimLightOff");
+      }
+  
+      // Alert case
+      if (readString.indexOf( "?alertOn") > 0){
+        alert = true;
+        Serial.println("alertOn");
+      }
+      if (readString.indexOf( "?alertOff") > 0){
+        alert = false;
+        Serial.println("alertOff");
+      }
+  
+      // System on/off case
+      if (readString.indexOf( "?turnOff") > 0){
+        fullLight = false;
+        dimLight = false;
+        alert =false;
+        Serial.println("turnOff");
+      }
+        readString=""; //clearing string for next read
+      }
+    }
+  }
+}
+
+void updatePin(){
+  if(alert){
+      if(isObstacle1<thresh || isObstacle2<thresh){        
+        digitalWrite(buzzerPin, HIGH);
+      }else{
+      digitalWrite(buzzerPin, LOW);
+      }
+    }else{
+        digitalWrite(buzzerPin, LOW);
+      }
+
+    if(amount == 0){
+      digitalWrite(LED1, LOW);
+      digitalWrite(LED2, LOW);
+    } else {
+
+      if(fullLight){
+        digitalWrite(LED1, HIGH);
+        digitalWrite(LED2, HIGH);
+      } else if(dimLight) {
+        digitalWrite(LED1, LOW);
+        digitalWrite(LED2, HIGH);
+      } else {
+        digitalWrite(LED1, LOW);
+        digitalWrite(LED2, LOW);
+      }
+
+    }
+}
+
+
