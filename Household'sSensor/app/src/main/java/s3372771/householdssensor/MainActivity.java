@@ -17,7 +17,7 @@ public class MainActivity extends ActionBarActivity {
     Switch dimLightSwitch;
     Switch alertSwitch;
     Switch offSwitch;
-    String ip;
+    String ip = "http://192.168.100.20/";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -38,7 +38,7 @@ public class MainActivity extends ActionBarActivity {
                 if(isChecked){
                     try {
                         dimLightSwitch.setChecked(false);
-                        String temp = ip + "?cmd=fullLightOn";
+                        String temp = ip + "?fullLightOn";
                         commandArduino(temp);
 
 
@@ -47,7 +47,7 @@ public class MainActivity extends ActionBarActivity {
                     }
                 }else{
                     try {
-                        String temp = ip + "?cmd=fullLightOff";
+                        String temp = ip + "?fullLightOff";
                         commandArduino(temp);
                     } catch (IOException e) {
                         e.printStackTrace();
@@ -65,7 +65,7 @@ public class MainActivity extends ActionBarActivity {
                 if(isChecked){
                     try {
                         fullLightSwitch.setChecked(false);
-                        String temp = ip + "?cmd=dimLightOn";
+                        String temp = ip + "?dimLightOn";
                         commandArduino(temp);
 
                     } catch (IOException e) {
@@ -73,7 +73,7 @@ public class MainActivity extends ActionBarActivity {
                     }
                 }else{
                     try {
-                        String temp = ip + "?cmd=dimLightOff";
+                        String temp = ip + "?dimLightOff";
                         commandArduino(temp);
                     } catch (IOException e) {
                         e.printStackTrace();
@@ -90,14 +90,14 @@ public class MainActivity extends ActionBarActivity {
 
                 if(isChecked){
                     try {
-                        String temp = ip + "?cmd=alertOn";
+                        String temp = ip + "?alertOn";
                         commandArduino(temp);
                     } catch (IOException e) {
                         e.printStackTrace();
                     }
                 }else{
                     try {
-                        String temp = ip + "?cmd=alertOff";
+                        String temp = ip + "?alertOff";
                         commandArduino(temp);
                     } catch (IOException e) {
                         e.printStackTrace();
@@ -122,7 +122,7 @@ public class MainActivity extends ActionBarActivity {
 
                         alertSwitch.setChecked(false);
                         alertSwitch.setEnabled(false);
-                        String temp = ip + "?cmd=turnOff";
+                        String temp = ip + "?turnOff";
                         commandArduino(temp);
 
                     } catch (IOException e) {
@@ -145,7 +145,7 @@ public class MainActivity extends ActionBarActivity {
     }
 
     public void commandArduino(String inputURL) throws IOException {
-        URL url = new URL(inputURL);
-        HttpURLConnection urlConnection = (HttpURLConnection) url.openConnection();
+        SendDataController sendData = new SendDataController(inputURL);
+        sendData.execute();
     }
 }
