@@ -8,6 +8,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.net.HttpURLConnection;
+import java.net.MalformedURLException;
 import java.net.URL;
 
 /**
@@ -36,8 +37,10 @@ public class SendDataController extends AsyncTask<Void, Void, Void> {
 
             System.out.println("goto: " + inputString);
         } catch (IOException e) {
-
+            e.printStackTrace();
         }
+
+
 
         return null;
     }

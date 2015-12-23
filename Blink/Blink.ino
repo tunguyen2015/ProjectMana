@@ -207,25 +207,25 @@ void updatePin(){
       }else{
       digitalWrite(buzzerPin, LOW);
       }
-    }else{
+   }else{
         digitalWrite(buzzerPin, LOW);
-      }
+   }
 
-    if(amount == 0){
+   if(amount == 0){
       digitalWrite(LED1, LOW);
       digitalWrite(LED2, LOW);
-    } else {
+   } else {
 
-      if(fullLight){
+   if(fullLight || amount >= 5){
         digitalWrite(LED1, HIGH);
         digitalWrite(LED2, HIGH);
-      } else if(dimLight) {
+   } else if(dimLight) {
         digitalWrite(LED1, LOW);
         digitalWrite(LED2, HIGH);
-      } else {
+   } else {
         digitalWrite(LED1, LOW);
         digitalWrite(LED2, LOW);
-      }
+   }
 
     }
 }
