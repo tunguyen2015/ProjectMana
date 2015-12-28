@@ -1,15 +1,23 @@
 package s3372771.householdssensor;
 
+import android.app.AlertDialog;
+import android.content.Context;
+import android.content.DialogInterface;
 import android.os.Bundle;
 import android.support.v7.app.ActionBarActivity;
+import android.view.View;
+import android.widget.Button;
 import android.widget.CompoundButton;
+import android.widget.EditText;
 import android.widget.Switch;
+import android.widget.TextView;
 
-import java.io.BufferedInputStream;
+import java.io.BufferedReader;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
-import java.net.HttpURLConnection;
-import java.net.URL;
+import java.io.InputStreamReader;
+import java.io.OutputStreamWriter;
 
 public class MainActivity extends ActionBarActivity {
 
@@ -17,8 +25,11 @@ public class MainActivity extends ActionBarActivity {
     Switch dimLightSwitch;
     Switch alertSwitch;
     Switch offSwitch;
-    String ip = "http://192.168.100.20/";
-
+    String ip;
+    String ipText;
+    AlertDialog alertDialog;
+    Button ipButton;
+    TextView ipTitle;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -28,7 +39,12 @@ public class MainActivity extends ActionBarActivity {
         dimLightSwitch = (Switch) findViewById(R.id.dimLightButton);
         alertSwitch = (Switch) findViewById(R.id.alertButton);
         offSwitch = (Switch) findViewById(R.id.offButton);
+        ipButton = (Button) findViewById(R.id.ipButton);
+        ipTitle = (TextView) findViewById(R.id.ipTitle);
 
+        ip = readIPfile();
+        ipText = "http://" + ip + "/";
+        ipTitle.setText(ip);
         fullLightSwitch.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
 
             @Override
@@ -38,16 +54,15 @@ public class MainActivity extends ActionBarActivity {
                 if(isChecked){
                     try {
                         dimLightSwitch.setChecked(false);
-                        String temp = ip + "?fullLightOn";
+                        String temp = ipText + "?fullLightOn";
                         commandArduino(temp);
-
 
                     } catch (IOException e) {
                         e.printStackTrace();
                     }
                 }else{
                     try {
-                        String temp = ip + "?fullLightOff";
+                        String temp = ipText + "?fullLightOff";
                         commandArduino(temp);
                     } catch (IOException e) {
                         e.printStackTrace();
@@ -65,7 +80,7 @@ public class MainActivity extends ActionBarActivity {
                 if(isChecked){
                     try {
                         fullLightSwitch.setChecked(false);
-                        String temp = ip + "?dimLightOn";
+                        String temp = ipText + "?dimLightOn";
                         commandArduino(temp);
 
                     } catch (IOException e) {
@@ -73,7 +88,7 @@ public class MainActivity extends ActionBarActivity {
                     }
                 }else{
                     try {
-                        String temp = ip + "?dimLightOff";
+                        String temp = ipText + "?dimLightOff";
                         commandArduino(temp);
                     } catch (IOException e) {
                         e.printStackTrace();
@@ -90,14 +105,14 @@ public class MainActivity extends ActionBarActivity {
 
                 if(isChecked){
                     try {
-                        String temp = ip + "?alertOn";
+                        String temp = ipText + "?alertOn";
                         commandArduino(temp);
                     } catch (IOException e) {
                         e.printStackTrace();
                     }
                 }else{
                     try {
-                        String temp = ip + "?alertOff";
+                        String temp = ipText + "?alertOff";
                         commandArduino(temp);
                     } catch (IOException e) {
                         e.printStackTrace();
@@ -122,7 +137,7 @@ public class MainActivity extends ActionBarActivity {
 
                         alertSwitch.setChecked(false);
                         alertSwitch.setEnabled(false);
-                        String temp = ip + "?turnOff";
+                        String temp = ipText + "?turnOff";
                         commandArduino(temp);
 
                     } catch (IOException e) {
@@ -133,7 +148,7 @@ public class MainActivity extends ActionBarActivity {
                         fullLightSwitch.setEnabled(true);
                         dimLightSwitch.setEnabled(true);
                         alertSwitch.setEnabled(true);
-//                        String temp = ip + "?cmd=turnOn";
+//                        String temp = ipText + "?cmd=turnOn";
 //                        commandArduino(temp);
 //
 //                    } catch (IOException e) {
@@ -142,10 +157,85 @@ public class MainActivity extends ActionBarActivity {
                 }
             }
         });
+
+        ipButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                showIPPopUp();
+            }
+        });
+    }
+
+    public void showIPPopUp() {
+
+        final EditText input = new EditText(this);
+        System.out.println(ip);
+        input.setText(ip);
+
+        alertDialog = new AlertDialog.Builder(this)
+                .setView(input)
+                .setTitle("New IP")
+                .setPositiveButton("Ok", new DialogInterface.OnClickListener() {
+
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+                        String newIp = input.getText().toString();
+                        if (!ip.equals(newIp)) {
+                            if (!newIp.isEmpty()) {
+                                ip = newIp;
+                                String ipText = "http://" + ip + "/";
+                                ipTitle.setText(ip);
+                                System.out.println(ipText);
+                                writeCurrentIP();
+                            }
+                        }
+                    }
+                })
+                .show();
     }
 
     public void commandArduino(String inputURL) throws IOException {
-        SendDataController sendData = new SendDataController(inputURL);
+        SendDataController sendData = new SendDataController(inputURL, this);
         sendData.execute();
+    }
+
+    public void writeCurrentIP() {
+        try {
+            OutputStreamWriter outputStreamWriter = new OutputStreamWriter(openFileOutput("ip.txt", Context.MODE_PRIVATE));
+            outputStreamWriter.write(ip);
+            outputStreamWriter.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public String readIPfile() {
+        String readIP = "";
+
+        try {
+            InputStream inputStream = openFileInput("ip.txt");
+
+            if (inputStream != null) {
+                InputStreamReader inputStreamReader = new InputStreamReader(inputStream);
+                BufferedReader bufferedString = new BufferedReader(inputStreamReader);
+
+                String readString = "";
+                StringBuilder stringBuilder = new StringBuilder();
+
+                while ((readString = bufferedString.readLine()) != null) {
+                    stringBuilder.append(readString);
+                }
+
+                inputStream.close();
+                readIP = stringBuilder.toString();
+            }
+        } catch (FileNotFoundException e) {
+            return "192.168.100.20";
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        return readIP;
+
     }
 }

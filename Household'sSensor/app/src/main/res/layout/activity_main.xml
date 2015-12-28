@@ -131,7 +131,8 @@
         android:layout_below="@+id/linearLayout3"
         android:layout_centerHorizontal="true"
         android:gravity="center"
-        android:paddingTop = "15dp">
+        android:paddingTop = "15dp"
+        android:id="@+id/linearLayout4">
 
         <RelativeLayout
             android:layout_width="match_parent"
@@ -163,6 +164,47 @@
         </RelativeLayout>
 
     </LinearLayout>
+
+    <LinearLayout
+        android:orientation="horizontal"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_below="@+id/linearLayout4"
+        android:layout_centerHorizontal="true"
+        android:gravity="center"
+        android:paddingTop = "15dp"
+        android:id="@+id/linearLayout5">
+
+        <RelativeLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_weight="1">
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textSize="20dp"
+                android:id="@+id/ipTitle"
+                android:textStyle="bold"
+                android:gravity="center"
+                android:layout_alignParentTop="true"
+                android:layout_centerHorizontal="true" />
+        </RelativeLayout>
+
+        <RelativeLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_weight="1">
+            <Button
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Change IP"
+                android:id="@+id/ipButton"
+                android:layout_centerHorizontal="true" />
+        </RelativeLayout>
+    </LinearLayout>
+
+
+
 
 
 </RelativeLayout>
