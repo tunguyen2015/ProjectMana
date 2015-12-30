@@ -1,6 +1,11 @@
 #include <SPI.h>
+#include <Dhcp.h>
+#include <Dns.h>
 #include <Ethernet.h>
+#include <EthernetClient.h>
 #include <Servo.h> 
+#include <Temboo.h>
+#include "TembooAccount.h"
 
 /*
   Blink
@@ -37,13 +42,15 @@ bool fullLight = true;
 bool dimLight = false;
 bool alert = true;
 bool off = false;
+bool sendNotification = true;
 int thresh;
+
+EthernetClient client;
 
 Servo myservo; // create servo object to control a servo
 byte mac[] = { 0xDE, 0xAD, 0xBE, 0xEF, 0xFE, 0xED }; //physical mac address
 byte ip[] = { 192, 168, 100, 20 }; // fixed IP addr in LAN
 byte gateway[] = { 192, 168, 100, 1 }; // internet access via router
-byte subnet[] = { 255, 255, 255, 0 }; //subnet mask
 EthernetServer server(80); //server port
 String readString;
 
@@ -80,7 +87,7 @@ void setup()
   pinMode(LED2, OUTPUT);
   pinMode(buzzerPin, OUTPUT);
   
-  Ethernet.begin(mac, ip, gateway, subnet);
+  Ethernet.begin(mac, ip, gateway);
   server.begin();
   Serial.begin(9600);
 }
@@ -103,8 +110,8 @@ void loop(){
             isObstacle2= analogRead(isObstaclePin2);
         if(isObstacle2 < thresh && isObstacle1 > thresh){
           amount++;
-          Serial.println("added");
-          Serial.println(amount);
+          //Serial.println("added");
+          //Serial.println(amount);
           delay(700);
           break;
         }
@@ -120,8 +127,8 @@ void loop(){
           if(amount != 0){
           amount--;
           }
-          Serial.println("deleted");
-          Serial.println(amount);
+          //Serial.println("deleted");
+          //Serial.println(amount);
           delay(700);
           break;          
         }
@@ -162,12 +169,12 @@ void getData(){
       if (readString.indexOf( "?fullLightOn") > 0){
         fullLight = true;
         dimLight = false;
-        Serial.println("fullLightOn");
+//        Serial.println("fullLightOn");
       }
   
       if (readString.indexOf( "?fullLightOff") > 0){
         fullLight = false;
-        Serial.println("fullLightOff");
+//        Serial.println("fullLightOff");
       }
   
       // Dim light case
@@ -209,11 +216,17 @@ void updatePin(){
   if(alert){
       if(isObstacle1<thresh || isObstacle2<thresh){        
         digitalWrite(buzzerPin, HIGH);
+        if(sendNotification){
+          // TODO
+          sendNotification = false;
+          runSendNotification();
+        }
       }else{
       digitalWrite(buzzerPin, LOW);
       }
    }else{
         digitalWrite(buzzerPin, LOW);
+        sendNotification = true;
    }
 
    if(amount == 0){
@@ -235,4 +248,29 @@ void updatePin(){
     }
 }
 
+void runSendNotification() {
+  TembooChoreo SendNotificationChoreo(client);
 
+    // Invoke the Temboo client
+    SendNotificationChoreo.begin();
+
+    // Set Temboo account credentials
+    SendNotificationChoreo.setAccountName(TEMBOO_ACCOUNT);
+    SendNotificationChoreo.setAppKeyName(TEMBOO_APP_KEY_NAME);
+    SendNotificationChoreo.setAppKey(TEMBOO_APP_KEY);
+
+    // Set profile to use for execution
+    SendNotificationChoreo.setProfile("Household2");
+
+    // Identify the Choreo to run
+    SendNotificationChoreo.setChoreo("/Library/Parse/PushNotifications/SendNotification");
+
+    // Run the Choreo; when results are available, print them to serial
+    SendNotificationChoreo.run();
+
+    while(SendNotificationChoreo.available()) {
+      char c = SendNotificationChoreo.read();
+      Serial.print(c);
+    }
+    SendNotificationChoreo.close();
+}

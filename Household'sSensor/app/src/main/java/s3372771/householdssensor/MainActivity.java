@@ -12,6 +12,10 @@ import android.widget.EditText;
 import android.widget.Switch;
 import android.widget.TextView;
 
+import com.parse.Parse;
+import com.parse.ParseInstallation;
+import com.parse.ParsePush;
+
 import java.io.BufferedReader;
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -25,15 +29,24 @@ public class MainActivity extends ActionBarActivity {
     Switch dimLightSwitch;
     Switch alertSwitch;
     Switch offSwitch;
-    String ip;
+    String ip = "";
+    String port = "";
     String ipText;
     AlertDialog alertDialog;
     Button ipButton;
     TextView ipTitle;
+    Button portButton;
+    TextView portTitle;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
+        Parse.initialize(this, "h60XKIwHycMWhQXHM0zaE4rIhoWwboxk72idTtAN", "7BfwAHjZFKTFVbfAuSValzVU4mxamSRoBoLvWIwR");
+        ParseInstallation.getCurrentInstallation().saveInBackground();
+
+        ParsePush.subscribeInBackground("temboo");
 
         fullLightSwitch = (Switch) findViewById(R.id.fullLightButton);
         dimLightSwitch = (Switch) findViewById(R.id.dimLightButton);
@@ -41,17 +54,20 @@ public class MainActivity extends ActionBarActivity {
         offSwitch = (Switch) findViewById(R.id.offButton);
         ipButton = (Button) findViewById(R.id.ipButton);
         ipTitle = (TextView) findViewById(R.id.ipTitle);
+        portButton = (Button) findViewById(R.id.portButton);
+        portTitle = (TextView) findViewById(R.id.portTitle);
 
-        ip = readIPfile();
-        ipText = "http://" + ip + "/";
+        readFromfile();
+        ipText =  "http://" + ip + ":" + port + "/";
         ipTitle.setText(ip);
+        portTitle.setText(port);
         fullLightSwitch.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
 
             @Override
             public void onCheckedChanged(CompoundButton buttonView,
                                          boolean isChecked) {
 
-                if(isChecked){
+                if (isChecked) {
                     try {
                         dimLightSwitch.setChecked(false);
                         String temp = ipText + "?fullLightOn";
@@ -60,7 +76,7 @@ public class MainActivity extends ActionBarActivity {
                     } catch (IOException e) {
                         e.printStackTrace();
                     }
-                }else{
+                } else {
                     try {
                         String temp = ipText + "?fullLightOff";
                         commandArduino(temp);
@@ -164,6 +180,13 @@ public class MainActivity extends ActionBarActivity {
                 showIPPopUp();
             }
         });
+
+        portButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                showPortPopUp();
+            }
+        });
     }
 
     public void showIPPopUp() {
@@ -183,10 +206,38 @@ public class MainActivity extends ActionBarActivity {
                         if (!ip.equals(newIp)) {
                             if (!newIp.isEmpty()) {
                                 ip = newIp;
-                                String ipText = "http://" + ip + "/";
+                                ipText =  "http://" + ip + ":" + port + "/";
                                 ipTitle.setText(ip);
                                 System.out.println(ipText);
-                                writeCurrentIP();
+                                writeIPAndPort();
+                            }
+                        }
+                    }
+                })
+                .show();
+    }
+
+    public void showPortPopUp() {
+
+        final EditText input = new EditText(this);
+        System.out.println(port);
+        input.setText(port);
+
+        alertDialog = new AlertDialog.Builder(this)
+                .setView(input)
+                .setTitle("New Port")
+                .setPositiveButton("Ok", new DialogInterface.OnClickListener() {
+
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+                        String newPort = input.getText().toString();
+                        if (!ip.equals(newPort)) {
+                            if (!newPort.isEmpty()) {
+                                port = newPort;
+                                ipText = "http://" + ip + ":" + port + "/";
+                                portTitle.setText(port);
+                                System.out.println(ipText);
+                                writeIPAndPort();
                             }
                         }
                     }
@@ -199,19 +250,19 @@ public class MainActivity extends ActionBarActivity {
         sendData.execute();
     }
 
-    public void writeCurrentIP() {
+    public void writeIPAndPort() {
         try {
             OutputStreamWriter outputStreamWriter = new OutputStreamWriter(openFileOutput("ip.txt", Context.MODE_PRIVATE));
             outputStreamWriter.write(ip);
+            outputStreamWriter.write("\n");
+            outputStreamWriter.write(port);
             outputStreamWriter.close();
         } catch (IOException e) {
             e.printStackTrace();
         }
     }
 
-    public String readIPfile() {
-        String readIP = "";
-
+    public void readFromfile() {
         try {
             InputStream inputStream = openFileInput("ip.txt");
 
@@ -219,23 +270,23 @@ public class MainActivity extends ActionBarActivity {
                 InputStreamReader inputStreamReader = new InputStreamReader(inputStream);
                 BufferedReader bufferedString = new BufferedReader(inputStreamReader);
 
-                String readString = "";
-                StringBuilder stringBuilder = new StringBuilder();
+                ip = bufferedString.readLine();;
+                port = bufferedString.readLine();
 
-                while ((readString = bufferedString.readLine()) != null) {
-                    stringBuilder.append(readString);
+                if(ip == null){
+                    ip = "14.186.175.175";
                 }
 
+                if(port == null){
+                    port = "800";
+                }
                 inputStream.close();
-                readIP = stringBuilder.toString();
             }
         } catch (FileNotFoundException e) {
-            return "192.168.100.20";
+            ip = "14.186.175.175";
+            port = "800";
         } catch (IOException e) {
             e.printStackTrace();
         }
-
-        return readIP;
-
     }
 }

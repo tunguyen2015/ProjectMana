@@ -45,8 +45,8 @@ public class SendDataController extends AsyncTask<Void, Void, Void> {
             URL url = new URL(inputString);
             HttpURLConnection urlConnection = (HttpURLConnection) url.openConnection();
             HttpURLConnection con = (HttpURLConnection) url.openConnection();
-            con.setConnectTimeout(2000);
-            con.setReadTimeout(2000);
+            con.setConnectTimeout(10000);
+            con.setReadTimeout(10000);
 
             BufferedReader in = new BufferedReader(new InputStreamReader(
                     con.getInputStream()));
