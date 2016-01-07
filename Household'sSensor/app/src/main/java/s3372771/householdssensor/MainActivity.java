@@ -1,10 +1,12 @@
 package s3372771.householdssensor;
 
+import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.os.Bundle;
 import android.support.v7.app.ActionBarActivity;
+import android.support.v7.app.AppCompatActivity;
 import android.view.View;
 import android.widget.Button;
 import android.widget.CompoundButton;
@@ -23,7 +25,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 
-public class MainActivity extends ActionBarActivity {
+public class MainActivity extends AppCompatActivity {
 
     Switch fullLightSwitch;
     Switch dimLightSwitch;
@@ -38,15 +40,11 @@ public class MainActivity extends ActionBarActivity {
     Button portButton;
     TextView portTitle;
 
+    protected ParseApplication app;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-
-        Parse.initialize(this, "h60XKIwHycMWhQXHM0zaE4rIhoWwboxk72idTtAN", "7BfwAHjZFKTFVbfAuSValzVU4mxamSRoBoLvWIwR");
-        ParseInstallation.getCurrentInstallation().saveInBackground();
-
-        ParsePush.subscribeInBackground("temboo");
 
         fullLightSwitch = (Switch) findViewById(R.id.fullLightButton);
         dimLightSwitch = (Switch) findViewById(R.id.dimLightButton);
